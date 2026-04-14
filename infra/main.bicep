@@ -94,6 +94,32 @@ param azureEnvOnly bool = false
 param useChatHistoryEnabled bool = true
 var useChatHistoryEnabledSetting = useChatHistoryEnabled ? 'True' : 'False'
 
+// ========== Fabric Capacity Parameters ========== //
+@description('Optional. Name of an existing Fabric capacity to use. If empty, a new capacity will be created when isWorkshop is true and azureEnvOnly is false.')
+param existingFabricCapacityName string = ''
+
+@allowed([
+  'F2'
+  'F4'
+  'F8'
+  'F16'
+  'F32'
+  'F64'
+  'F128'
+  'F256'
+  'F512'
+  'F1024'
+  'F2048'
+])
+@description('Optional. SKU tier of the Fabric capacity resource. Defaults to F2.')
+param fabricCapacitySku string = 'F2'
+
+@description('Optional. An array of user object IDs or service principal object IDs that will be assigned the Fabric Capacity Admin role.')
+param fabricAdminMembers array = []
+
+var useExistingFabricCapacity = !empty(existingFabricCapacityName)
+var shouldCreateFabricCapacity = isWorkshop && !azureEnvOnly && !useExistingFabricCapacity
+
 // If isWorkshop is false, always deploy; if isWorkshop is true, respect deployApp
 var shouldDeployApp = !isWorkshop || deployApp
 
@@ -158,6 +184,23 @@ resource resourceGroupTags 'Microsoft.Resources/tags@2021-04-01' = if (!isWorksh
         Type: 'Non-WAF'
       }
     )
+  }
+}
+
+// ========== Fabric Capacity (Workshop mode) ========== //
+var fabricCapacityResourceName = useExistingFabricCapacity ? existingFabricCapacityName : 'fc${solutionSuffix}'
+var fabricCapacityDefaultAdmins = deployer().?userPrincipalName == null
+  ? [deployer().objectId]
+  : [deployer().userPrincipalName]
+var fabricTotalAdminMembers = union(fabricCapacityDefaultAdmins, fabricAdminMembers)
+
+module fabricCapacityModule 'br/public:avm/res/fabric/capacity:0.1.1' = if (shouldCreateFabricCapacity) {
+  name: take('avm.res.fabric.capacity.${fabricCapacityResourceName}', 64)
+  params: {
+    name: fabricCapacityResourceName
+    location: solutionLocation
+    skuName: fabricCapacitySku
+    adminMembers: fabricTotalAdminMembers
   }
 }
 
@@ -464,3 +507,12 @@ output AZURE_ENV_DEPLOY_APP bool = deployApp
 
 @description('Flag indicating Azure-only mode (no Fabric)')
 output AZURE_ENV_ONLY bool = azureEnvOnly
+
+@description('The name of the Fabric capacity resource')
+output AZURE_FABRIC_CAPACITY_NAME string = (isWorkshop && !azureEnvOnly) ? fabricCapacityResourceName : ''
+
+@description('The identities assigned as Fabric Capacity Admin members')
+output AZURE_FABRIC_CAPACITY_ADMINISTRATORS array = (isWorkshop && !azureEnvOnly) ? fabricTotalAdminMembers : []
+
+@description('The unique solution suffix of the deployed resources')
+output SOLUTION_SUFFIX string = solutionSuffix

@@ -29,6 +29,10 @@ By default this template will use the environment name as the prefix to prevent 
 | `IS_WORKSHOP`                             | bool    | `true`                   | Enable workshop mode with sample data and simplified configuration.        |
 | `AZURE_ENV_ONLY`                          | bool    | `false`                  | Deploy Azure SQL Server instead of Fabric SQL.                             |
 | `DEPLOYING_USER_PRINCIPAL_TYPE`           | string  | `User`                   | Principal type of deployer (allowed: `User`, `ServicePrincipal`).          |
+| `EXISTING_FABRIC_CAPACITY_NAME`           | string  | ` `                      | Use an existing Fabric capacity instead of creating a new one. If empty, a new capacity is auto-created in workshop mode. |
+| `FABRIC_CAPACITY_SKU`                     | string  | `F2`                     | SKU tier for the Fabric capacity (allowed: `F2` through `F2048`).          |
+| `EXISTING_FABRIC_WORKSPACE_ID`            | string  | ` `                      | Use an existing Fabric workspace instead of creating a new one. If empty, a new workspace is auto-created in workshop mode. |
+| `FABRIC_WORKSPACE_NAME`                   | string  | *(auto-generated)*       | Override the auto-generated Fabric workspace name.                         |
 
 
 

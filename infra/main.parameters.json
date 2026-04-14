@@ -61,6 +61,12 @@
     },
     "deployingUserPrincipalType": {
       "value": "${DEPLOYING_USER_PRINCIPAL_TYPE=User}"
+    },
+    "existingFabricCapacityName": {
+      "value": "${EXISTING_FABRIC_CAPACITY_NAME=}"
+    },
+    "fabricCapacitySku": {
+      "value": "${FABRIC_CAPACITY_SKU=F2}"
     }
   }
 }
