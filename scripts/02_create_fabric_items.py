@@ -151,44 +151,44 @@ def delete_workspace_api(workspace_id):
 
 def setup_workspace(capacity_name, workspace_name):
     """Create or retrieve a Fabric workspace and assign it to a capacity. Returns workspace ID."""
-    print(f"   Looking up capacity: {capacity_name}")
+    print(f"  Looking up capacity: {capacity_name}")
     capacity = get_capacity_by_name(capacity_name)
     if not capacity:
         raise Exception(f"Capacity '{capacity_name}' not found")
 
     capacity_id = capacity["id"]
-    print(f"   ✅ Found capacity: {capacity_name} ({capacity_id})")
+    print(f"  [OK] Found capacity: {capacity_name} ({capacity_id})")
 
-    print(f"   Checking if workspace '{workspace_name}' exists...")
+    print(f"  Checking if workspace '{workspace_name}' exists...")
     workspace = get_workspace_by_name(workspace_name)
 
     if workspace:
         workspace_id = workspace["id"]
-        print(f"   ℹ️ Workspace already exists: {workspace_name} ({workspace_id})")
+        print(f"  [OK] Workspace already exists: {workspace_name} ({workspace_id})")
 
         current_capacity_id = workspace.get("capacityId")
         if current_capacity_id == capacity_id:
-            print(f"   ✅ Workspace already assigned to capacity: {capacity_name}")
+            print(f"  [OK] Workspace already assigned to capacity: {capacity_name}")
         else:
-            print(f"   🔗 Assigning workspace to capacity: {capacity_name}")
+            print(f"  Assigning workspace to capacity: {capacity_name}")
             try:
                 assign_workspace_to_capacity(workspace_id, capacity_id)
-                print(f"   ✅ Successfully assigned workspace to capacity")
+                print(f"  [OK] Successfully assigned workspace to capacity")
             except Exception:
                 # Verify actual state on failure
                 refreshed = get_workspace_by_name(workspace_name)
                 if refreshed and refreshed.get("capacityId") == capacity_id:
-                    print(f"   ⚠️ Assignment call failed but workspace is on correct capacity. Continuing...")
+                    print(f"  [WARN] Assignment call failed but workspace is on correct capacity. Continuing...")
                 else:
                     raise
     else:
-        print(f"   Creating new workspace: {workspace_name}")
+        print(f"  Creating new workspace: {workspace_name}")
         workspace_id = create_workspace_api(workspace_name)
-        print(f"   ✅ Created workspace: {workspace_name} ({workspace_id})")
+        print(f"  [OK] Created workspace: {workspace_name} ({workspace_id})")
 
-        print(f"   🔗 Assigning workspace to capacity: {capacity_name}")
+        print(f"  Assigning workspace to capacity: {capacity_name}")
         assign_workspace_to_capacity(workspace_id, capacity_id)
-        print(f"   ✅ Successfully assigned workspace to capacity")
+        print(f"  [OK] Successfully assigned workspace to capacity")
 
     return workspace_id
 
@@ -210,45 +210,46 @@ def run_cleanup():
                     break
 
     if not workspace_id:
-        print("No FABRIC_WORKSPACE_ID found. Skipping workspace cleanup.")
+        print("  No FABRIC_WORKSPACE_ID found. Skipping workspace cleanup.")
         return
 
-    print(f"\nFabric Workspace Cleanup")
-    print("=" * 60)
-    print(f"Workspace ID: {workspace_id}")
+    print(f"\n{'='*60}")
+    print(f"Fabric Workspace Cleanup")
+    print(f"{'='*60}")
+    print(f"  Workspace ID: {workspace_id}")
 
     try:
         resp = make_request("GET", f"{FABRIC_API_BASE}/workspaces/{workspace_id}")
 
         if resp.status_code == 404:
-            print(f"Workspace {workspace_id} not found (already deleted).")
+            print(f"  [OK] Workspace {workspace_id} not found (already deleted).")
             return
 
         if resp.status_code == 200:
             ws_name = resp.json().get("displayName", "Unknown")
-            print(f"Workspace:    {ws_name}")
+            print(f"  Workspace:    {ws_name}")
 
-            confirm = input(f"\nDelete workspace '{ws_name}' ({workspace_id})? [y/N]: ").strip().lower()
+            confirm = input(f"\n  Delete workspace '{ws_name}' ({workspace_id})? [y/N]: ").strip().lower()
             if confirm != "y":
-                print("Skipped workspace deletion.")
+                print("  Skipped workspace deletion.")
                 return
 
             delete_workspace_api(workspace_id)
-            print(f"[OK] Workspace '{ws_name}' deleted successfully.")
+            print(f"  [OK] Workspace '{ws_name}' deleted successfully.")
 
             # Clear persisted workspace ID so next run auto-creates
             os.environ.pop("FABRIC_WORKSPACE_ID", None)
             if os.path.exists(env_path):
                 from dotenv import set_key
                 set_key(env_path, "FABRIC_WORKSPACE_ID", "")
-                print("[OK] Cleared FABRIC_WORKSPACE_ID from scripts/.env")
+                print("  [OK] Cleared FABRIC_WORKSPACE_ID from scripts/.env")
         else:
-            print(f"[WARN] Could not verify workspace: {resp.status_code}")
-            print("Skipping deletion to be safe.")
+            print(f"  [WARN] Could not verify workspace: {resp.status_code}")
+            print("  Skipping deletion to be safe.")
 
     except Exception as exc:
-        print(f"[WARN] Failed to delete workspace: {exc}")
-        print("You can delete it manually from https://app.fabric.microsoft.com")
+        print(f"  [WARN] Failed to delete workspace: {exc}")
+        print("  You can delete it manually from https://app.fabric.microsoft.com")
 
 if args.cleanup:
     try:
@@ -274,9 +275,9 @@ if not WORKSPACE_ID:
     solution_suffix = os.getenv("SOLUTION_SUFFIX", "").strip()
     workspace_name = os.getenv("FABRIC_WORKSPACE_NAME") or f"Agentic Apps UDF - {solution_suffix or args.solutionname}"
 
-    print(f"\n🏭 Creating Fabric Workspace...")
-    print(f"   Capacity:  {capacity_name}")
-    print(f"   Workspace: {workspace_name}")
+    print(f"\nCreating Fabric Workspace...")
+    print(f"  Capacity:  {capacity_name}")
+    print(f"  Workspace: {workspace_name}")
 
     try:
         WORKSPACE_ID = setup_workspace(
@@ -284,7 +285,7 @@ if not WORKSPACE_ID:
             workspace_name=workspace_name,
         )
     except Exception as exc:
-        print(f"   ❌ Workspace creation failed: {exc}")
+        print(f"  [FAIL] Workspace creation failed: {exc}")
         sys.exit(1)
 
     # Persist workspace ID to scripts/.env and current process env
@@ -292,8 +293,8 @@ if not WORKSPACE_ID:
     from dotenv import set_key
     env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
     set_key(env_path, "FABRIC_WORKSPACE_ID", WORKSPACE_ID)
-    print(f"   ✅ FABRIC_WORKSPACE_ID={WORKSPACE_ID} saved to scripts/.env")
-    print(f"   🌐 URL: https://app.fabric.microsoft.com/groups/{WORKSPACE_ID}")
+    print(f"  [OK] FABRIC_WORKSPACE_ID={WORKSPACE_ID} saved to scripts/.env")
+    print(f"  URL: https://app.fabric.microsoft.com/groups/{WORKSPACE_ID}")
 
 # Get data folder - use arg if provided, else from .env with proper path resolution
 if args.data_folder:
