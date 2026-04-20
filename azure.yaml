@@ -15,12 +15,12 @@ metadata:
 hooks:
   predown:
     windows:
-      run: python scripts/fabric/cleanup_workspace.py
+      run: python scripts/02_create_fabric_items.py --cleanup
       shell: pwsh
       continueOnError: true
       interactive: true
     posix:
-      run: python scripts/fabric/cleanup_workspace.py
+      run: python scripts/02_create_fabric_items.py --cleanup
       shell: sh
       continueOnError: true
       interactive: true
