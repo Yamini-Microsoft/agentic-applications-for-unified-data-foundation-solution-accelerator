@@ -29,6 +29,11 @@ import base64
 import uuid
 from datetime import datetime
 
+# Ensure UTF-8 output on Windows (avoids cp1252 encoding errors with emoji)
+if sys.stdout.encoding and sys.stdout.encoding.lower() != 'utf-8':
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
 # Load environment from azd + project .env
 from load_env import load_all_env, get_data_folder
 load_all_env()
@@ -54,10 +59,53 @@ p.add_argument("--datasource-type", choices=["ontology", "lakehouse"], default="
                help="Data source type for Data Agent: 'ontology' (default) or 'lakehouse'")
 args = p.parse_args()
 
-WORKSPACE_ID = os.getenv("FABRIC_WORKSPACE_ID")
+# ============================================================================
+# Workspace Setup (auto-create if FABRIC_WORKSPACE_ID not set)
+# ============================================================================
+
+WORKSPACE_ID = os.getenv("FABRIC_WORKSPACE_ID", "").strip()
+
 if not WORKSPACE_ID:
-    print("ERROR: FABRIC_WORKSPACE_ID not set in .env")
-    sys.exit(1)
+    capacity_name = os.getenv("AZURE_FABRIC_CAPACITY_NAME", "").strip()
+    if not capacity_name:
+        print("ERROR: FABRIC_WORKSPACE_ID not set and AZURE_FABRIC_CAPACITY_NAME not available.")
+        print("       Either set FABRIC_WORKSPACE_ID in scripts/.env")
+        print("       Or set AZURE_FABRIC_CAPACITY_NAME to auto-create a workspace.")
+        sys.exit(1)
+
+    solution_suffix = os.getenv("SOLUTION_SUFFIX", "").strip()
+    workspace_name = os.getenv("FABRIC_WORKSPACE_NAME") or f"Agentic Apps UDF - {solution_suffix or args.solutionname}"
+
+    print(f"\n🏭 Creating Fabric Workspace...")
+    print(f"   Capacity:  {capacity_name}")
+    print(f"   Workspace: {workspace_name}")
+
+    # Import workspace setup helpers from scripts/fabric
+    fabric_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fabric")
+    sys.path.insert(0, fabric_dir)
+    from workspace_setup import setup_workspace, create_fabric_client
+
+    try:
+        fabric_client = create_fabric_client()
+        WORKSPACE_ID = setup_workspace(
+            fabric_client=fabric_client,
+            capacity_name=capacity_name,
+            workspace_name=workspace_name,
+        )
+    except Exception as exc:
+        print(f"   ❌ Workspace creation failed: {exc}")
+        sys.exit(1)
+
+    # Persist workspace ID to scripts/.env and current process env
+    os.environ["FABRIC_WORKSPACE_ID"] = WORKSPACE_ID
+    from dotenv import set_key
+    env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    set_key(env_path, "FABRIC_WORKSPACE_ID", WORKSPACE_ID)
+    print(f"   ✅ FABRIC_WORKSPACE_ID={WORKSPACE_ID} saved to scripts/.env")
+    print(f"   🌐 URL: https://app.fabric.microsoft.com/groups/{WORKSPACE_ID}")
+
+    # Clean up sys.path
+    sys.path.remove(fabric_dir)
 
 # Get data folder - use arg if provided, else from .env with proper path resolution
 if args.data_folder:
@@ -477,7 +525,7 @@ create_url = f"{FABRIC_API}/workspaces/{WORKSPACE_ID}/items"
 # Retry notebook creation in case the name is not yet released after deletion
 for nb_attempt in range(5):
     resp = make_request("POST", create_url, json=create_nb_payload)
-    if resp.status_code == 400 and "NotAvailableYet" in resp.text:
+    if resp.status_code in (400, 409) and "NotAvailableYet" in resp.text:
         wait_secs = 15 * (nb_attempt + 1)
         print(f"  Name not released yet (attempt {nb_attempt+1}/5). Waiting {wait_secs}s...")
         time.sleep(wait_secs)

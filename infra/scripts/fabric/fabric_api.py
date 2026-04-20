@@ -113,6 +113,11 @@ class FabricApiClient:
         body = {"capacityId": capacity_id}
         self._request("POST", url, json=body)
 
+    def delete_workspace(self, workspace_id: str) -> None:
+        """Delete a Fabric workspace by ID."""
+        url = f"{self.BASE_URL}/workspaces/{workspace_id}"
+        self._request("DELETE", url)
+
     def add_workspace_role_assignment(
         self, workspace_id: str, principal_id: str, principal_type: str, role: str = "Admin"
     ) -> None:

@@ -13,29 +13,30 @@ metadata:
   template: agentic-applications-for-unified-data-foundation@1.1
 
 hooks:
+  predown:
+    windows:
+      run: python scripts/fabric/cleanup_workspace.py
+      shell: pwsh
+      continueOnError: true
+      interactive: true
+    posix:
+      run: python scripts/fabric/cleanup_workspace.py
+      shell: sh
+      continueOnError: true
+      interactive: true
   postprovision:
     windows:
       run: |
         $isWorkshop = $env:IS_WORKSHOP
         $deployApp = $env:AZURE_ENV_DEPLOY_APP
         $azureEnvOnly = $env:AZURE_ENV_ONLY
-        $existingWorkspaceId = $env:EXISTING_FABRIC_WORKSPACE_ID
 
         if (-not ($isWorkshop -eq "true" -and $deployApp -ne "true")) {
             Write-Host "Web app URL: "
             Write-Host "$env:WEB_APP_URL" -ForegroundColor Cyan
         }
 
-        # Fabric Workspace setup for workshop mode (when not Azure-only)
-        if ($isWorkshop -eq "true" -and $azureEnvOnly -ne "true") {
-            Write-Host "`n🏭 Setting up Fabric Workspace..." -ForegroundColor Yellow
-            pip install azure-identity requests --quiet 2>$null
-            python ./infra/scripts/fabric/setup_fabric_workspace.py
-            if ($LASTEXITCODE -ne 0) {
-                Write-Host "⚠️  Fabric workspace setup failed. You can set it up manually." -ForegroundColor Yellow
-                Write-Host "   See: workshop/docs/01-deploy/02-setup-fabric.md" -ForegroundColor Gray
-            }
-        } elseif ($isWorkshop -ne "true") {
+        if ($isWorkshop -ne "true") {
             Write-Host "`nRun the following commands in the bash terminal:"
             Write-Host "1. Create agents:"
             Write-Host "bash ./infra/scripts/agent_scripts/run_create_agents_scripts.sh" -ForegroundColor Cyan
@@ -51,7 +52,6 @@ hooks:
       run: |
         IS_WORKSHOP_VAL="${IS_WORKSHOP:-}"
         AZURE_ENV_ONLY_VAL="${AZURE_ENV_ONLY:-}"
-        EXISTING_WS_ID="${EXISTING_FABRIC_WORKSPACE_ID:-}"
 
         if [ "$IS_WORKSHOP_VAL" != "true" ] || [ "$AZURE_ENV_DEPLOY_APP" = "true" ]; then
             echo "Web app URL: "
@@ -59,16 +59,7 @@ hooks:
             echo ""
         fi
 
-        # Fabric Workspace setup for workshop mode (when not Azure-only)
-        if [ "$IS_WORKSHOP_VAL" = "true" ] && [ "$AZURE_ENV_ONLY_VAL" != "true" ]; then
-            echo ""
-            echo "🏭 Setting up Fabric Workspace..."
-            pip install azure-identity requests --quiet 2>/dev/null
-            python ./infra/scripts/fabric/setup_fabric_workspace.py || {
-                echo "⚠️  Fabric workspace setup failed. You can set it up manually."
-                echo "   See: workshop/docs/01-deploy/02-setup-fabric.md"
-            }
-        elif [ "$IS_WORKSHOP_VAL" != "true" ]; then
+        if [ "$IS_WORKSHOP_VAL" != "true" ]; then
             echo "Run the following commands in the bash terminal:"
             echo "1. Create agents:"
             echo "bash ./infra/scripts/agent_scripts/run_create_agents_scripts.sh"

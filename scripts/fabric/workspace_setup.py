@@ -7,9 +7,13 @@ Creates or retrieves a Fabric workspace and assigns it to a capacity.
 import sys
 import os
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# Add infra fabric path for FabricApiClient
+_infra_fabric_dir = os.path.normpath(
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "infra", "scripts", "fabric")
+)
+sys.path.insert(0, _infra_fabric_dir)
 
-from fabric_api import FabricApiClient, FabricApiError
+from fabric_api import FabricApiClient, FabricApiError, create_fabric_client
 
 
 def setup_workspace(
@@ -26,7 +30,7 @@ def setup_workspace(
     Returns:
         str: Workspace ID
     """
-    print(f"🏢 Setting up workspace: {workspace_name}")
+    print(f"🏭 Setting up workspace: {workspace_name}")
 
     # Look up capacity
     print(f"   Looking up capacity: {capacity_name}")
@@ -43,13 +47,13 @@ def setup_workspace(
 
     if workspace:
         workspace_id = workspace["id"]
-        print(f"   ℹ️  Workspace already exists: {workspace_name} ({workspace_id})")
+        print(f"   ℹ️ Workspace already exists: {workspace_name} ({workspace_id})")
 
         current_capacity_id = workspace.get("capacityId")
         if current_capacity_id == capacity_id:
             print(f"   ✅ Workspace already assigned to capacity: {capacity_name}")
         else:
-            print(f"   🔄 Assigning workspace to capacity: {capacity_name}")
+            print(f"   🔗 Assigning workspace to capacity: {capacity_name}")
             try:
                 fabric_client.assign_workspace_to_capacity(workspace_id, capacity_id)
                 print(f"   ✅ Successfully assigned workspace to capacity")
@@ -58,7 +62,7 @@ def setup_workspace(
                 refreshed = fabric_client.get_workspace(workspace_name)
                 if refreshed and refreshed.get("capacityId") == capacity_id:
                     print(
-                        f"   ⚠️  Assignment call failed but workspace is on correct capacity. Continuing..."
+                        f"   ⚠️ Assignment call failed but workspace is on correct capacity. Continuing..."
                     )
                 else:
                     raise
@@ -69,7 +73,7 @@ def setup_workspace(
         print(f"   ✅ Created workspace: {workspace_name} ({workspace_id})")
 
         # Assign to capacity
-        print(f"   🔄 Assigning workspace to capacity: {capacity_name}")
+        print(f"   🔗 Assigning workspace to capacity: {capacity_name}")
         fabric_client.assign_workspace_to_capacity(workspace_id, capacity_id)
         print(f"   ✅ Successfully assigned workspace to capacity")
 
