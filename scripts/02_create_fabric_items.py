@@ -243,6 +243,13 @@ def run_cleanup():
                 from dotenv import set_key
                 set_key(env_path, "FABRIC_WORKSPACE_ID", "")
                 print("  [OK] Cleared FABRIC_WORKSPACE_ID from scripts/.env")
+            # Also clear from azd env
+            try:
+                import subprocess as _sp
+                _sp.run(["azd", "env", "set", "FABRIC_WORKSPACE_ID", ""], check=True, capture_output=True)
+                print("  [OK] Cleared FABRIC_WORKSPACE_ID from azd env")
+            except Exception:
+                pass
         else:
             print(f"  [WARN] Could not verify workspace: {resp.status_code}")
             print("  Skipping deletion to be safe.")
@@ -294,6 +301,13 @@ if not WORKSPACE_ID:
     env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
     set_key(env_path, "FABRIC_WORKSPACE_ID", WORKSPACE_ID)
     print(f"  [OK] FABRIC_WORKSPACE_ID={WORKSPACE_ID} saved to scripts/.env")
+    # Also persist to azd env so .azure/<env>/.env stays in sync
+    try:
+        import subprocess as _sp
+        _sp.run(["azd", "env", "set", "FABRIC_WORKSPACE_ID", WORKSPACE_ID], check=True, capture_output=True)
+        print(f"  [OK] FABRIC_WORKSPACE_ID={WORKSPACE_ID} saved to azd env")
+    except Exception:
+        pass
     print(f"  URL: https://app.fabric.microsoft.com/groups/{WORKSPACE_ID}")
 
 # Get data folder - use arg if provided, else from .env with proper path resolution

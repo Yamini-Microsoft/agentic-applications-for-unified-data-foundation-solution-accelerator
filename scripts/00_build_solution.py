@@ -325,6 +325,11 @@ if not azure_only:
         from dotenv import set_key
         env_path = os.path.join(script_dir, ".env")
         set_key(env_path, "FABRIC_WORKSPACE_ID", fabric_workspace_id)
+        # Also persist to azd env so .azure/<env>/.env stays in sync
+        try:
+            subprocess.run(["azd", "env", "set", "FABRIC_WORKSPACE_ID", fabric_workspace_id], check=True, capture_output=True)
+        except Exception:
+            pass
     # else: no workspace ID but capacity is set — step 02 will auto-create
 
 # ============================================================================
