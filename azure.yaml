@@ -40,6 +40,7 @@ hooks:
       run: |
         $isWorkshop = $env:IS_WORKSHOP
         $deployApp = $env:AZURE_ENV_DEPLOY_APP
+        $azureEnvOnly = $env:AZURE_ENV_ONLY
 
         if (-not ($isWorkshop -eq "true" -and $deployApp -ne "true")) {
             Write-Host "Web app URL: "
@@ -61,6 +62,7 @@ hooks:
     posix:
       run: |
         IS_WORKSHOP_VAL="${IS_WORKSHOP:-}"
+        AZURE_ENV_ONLY_VAL="${AZURE_ENV_ONLY:-}"
 
         if [ "$IS_WORKSHOP_VAL" != "true" ] || [ "$AZURE_ENV_DEPLOY_APP" = "true" ]; then
             echo "Web app URL: "

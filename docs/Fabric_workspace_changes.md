@@ -2,34 +2,54 @@
 
 ## Overview
 
-Fabric workspace lifecycle (creation, reuse, cleanup) is managed inline in `scripts/02_create_fabric_items.py` and `scripts/00_build_solution.py`, driven by environment variables. The workspace ID is persisted to both `scripts/.env` and the azd environment (`.azure/<env>/.env`) to keep them in sync.
+Fabric workspace lifecycle (creation, reuse, cleanup) is managed inline in `scripts/02_create_fabric_items.py` and `scripts/00_build_solution.py`, driven by the `CREATE_FABRIC_WORKSPACE` environment flag. The workspace ID is persisted to both `scripts/.env` and the azd environment (`.azure/<env>/.env`) to keep them in sync.
 
 ## Workspace Creation
 
-When `FABRIC_WORKSPACE_ID` is not set, the pipeline auto-creates a workspace using the Fabric capacity provisioned by `azd up`. The flow:
+Workspace creation is controlled by the `CREATE_FABRIC_WORKSPACE` flag (default: `false`).
 
-1. `00_build_solution.py` checks for a workspace ID via CLI arg, env var, or interactive prompt
-2. If none is found but `AZURE_FABRIC_CAPACITY_NAME` exists, `02_create_fabric_items.py` auto-creates a workspace
+To enable workspace auto-creation:
+
+```bash
+azd env set CREATE_FABRIC_WORKSPACE true
+```
+
+When `CREATE_FABRIC_WORKSPACE` is `true`, the flow is:
+
+1. `00_build_solution.py` detects the flag and delegates to `02_create_fabric_items.py`
+2. `02_create_fabric_items.py` looks up `AZURE_FABRIC_CAPACITY_NAME` and creates a workspace (or reuses one with the same name)
 3. The new workspace ID is saved to:
    - `scripts/.env` (for project-level persistence)
    - azd env via `azd env set` (so `.azure/<env>/.env` stays in sync)
    - Current process environment (for downstream steps)
 
+When `CREATE_FABRIC_WORKSPACE` is `false` (default), users must set `FABRIC_WORKSPACE_ID` directly:
+
+```bash
+azd env set FABRIC_WORKSPACE_ID "your-workspace-id"
+```
+
 Workspace helper functions (create, assign to capacity, lookup by name) are defined inline in `02_create_fabric_items.py`.
 
 ## Workspace Reuse
 
-When `FABRIC_WORKSPACE_ID` is already set, the pipeline skips creation and reuses the existing workspace. The workspace is also matched by name — if a workspace with the expected name already exists in Fabric, it is reused even if the ID wasn't persisted locally.
+When `CREATE_FABRIC_WORKSPACE` is `true` and a workspace with the expected name already exists in Fabric, it is reused rather than creating a duplicate.
 
 ## Workspace Cleanup
 
-Running `azd down` triggers the predown hook: `python scripts/02_create_fabric_items.py --cleanup`
+Running `azd down` triggers the predown hook, but only when `CREATE_FABRIC_WORKSPACE` is `true` (since the workspace was auto-created and should be auto-cleaned):
+
+```
+python scripts/02_create_fabric_items.py --cleanup
+```
 
 This:
 1. Looks up the workspace by ID
-2. Prompts for confirmation before deletion
+2. Prompts for confirmation before deletion (use `--yes` to skip prompt)
 3. Deletes the workspace via Fabric API
 4. Clears `FABRIC_WORKSPACE_ID` from both `scripts/.env` and azd env
+
+The `--yes`/`-y` flag skips the confirmation prompt for non-interactive environments (CI pipelines, `azd down`).
 
 ## Environment Variable Sync
 
@@ -44,16 +64,30 @@ Both files are updated on workspace creation, user input, and cleanup. This ensu
 
 ## Behavior Matrix
 
-| `FABRIC_WORKSPACE_ID` | `AZURE_FABRIC_CAPACITY_NAME` | Behavior |
-|---|---|---|
-| Set | (any) | Reuses existing workspace |
-| Empty | Set | Auto-creates workspace |
-| Empty | Empty | Prompts user for workspace ID |
+| `CREATE_FABRIC_WORKSPACE` | Behavior |
+|---|---|
+| `true` | Auto-creates workspace using `AZURE_FABRIC_CAPACITY_NAME` (or reuses by name) |
+| `false` (default) | Uses `FABRIC_WORKSPACE_ID` directly (errors if not set) |
+
+## Related Parameters
+
+| Parameter | Description |
+|---|---|
+| `CREATE_FABRIC_WORKSPACE` | Set to `true` to auto-create a Fabric workspace (default: `false`) |
+| `AZURE_FABRIC_CAPACITY_NAME` | Name of the Fabric capacity (provisioned by `azd up`) |
+| `FABRIC_WORKSPACE_ID` | Workspace ID — set manually when `CREATE_FABRIC_WORKSPACE` is `false` |
+| `FABRIC_ADMIN_MEMBERS` | Array of object IDs for Fabric Capacity Admin role (e.g. `'["id1","id2"]'`) |
 
 ## Usage
 
 ```bash
-# Fresh deployment — auto-creates workspace
+# Option A: Auto-create workspace
+azd env set CREATE_FABRIC_WORKSPACE true
+azd up
+python scripts/00_build_solution.py
+
+# Option B: Use existing workspace
+azd env set FABRIC_WORKSPACE_ID "your-workspace-id"
 azd up
 python scripts/00_build_solution.py
 
@@ -63,6 +97,6 @@ python scripts/00_build_solution.py
 # Custom data
 python scripts/00_build_solution.py --custom-data data/customdata
 
-# Tear down (deletes workspace + Azure resources)
+# Tear down (deletes workspace if auto-created + Azure resources)
 azd down
 ```
