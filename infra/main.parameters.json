@@ -67,6 +67,9 @@
     },
     "fabricCapacitySku": {
       "value": "${FABRIC_CAPACITY_SKU=F2}"
+    },
+    "fabricAdminMembers": {
+      "value": "${FABRIC_ADMIN_MEMBERS=[]}"
     }
   }
 }

@@ -300,22 +300,23 @@ for step in pipeline:
 
 if not azure_only:
     fabric_workspace_id = args.fabric_workspace_id or os.getenv("FABRIC_WORKSPACE_ID", "").strip()
-    capacity_name = os.getenv("AZURE_FABRIC_CAPACITY_NAME", "").strip()
+    create_workspace_flag = os.getenv("CREATE_FABRIC_WORKSPACE", "false").strip().lower() == "true"
 
-    if not fabric_workspace_id and not capacity_name:
-        # No workspace ID and no capacity to auto-create — prompt user
+    if not fabric_workspace_id and not create_workspace_flag:
+        # No workspace ID and auto-create not enabled — prompt user
         print("\n" + "="*60)
         print("Fabric Workspace Configuration")
         print("="*60)
         print("\nFabric mode requires a Workspace ID.")
         print("You can find it in your Fabric URL: https://app.fabric.microsoft.com/groups/<workspace-id>")
+        print("\nOr enable auto-creation: azd env set CREATE_FABRIC_WORKSPACE true")
         choice = input("\nFabric Workspace ID: ").strip()
         if choice:
             fabric_workspace_id = choice
         else:
             print("ERROR: Fabric Workspace ID is required in Fabric mode.")
             print("       Pass --fabric-workspace-id <id> or set FABRIC_WORKSPACE_ID in .env")
-            print("       Or set AZURE_FABRIC_CAPACITY_NAME to auto-create a workspace.")
+            print("       Or enable auto-creation: azd env set CREATE_FABRIC_WORKSPACE true")
             sys.exit(1)
 
     if fabric_workspace_id:
@@ -330,7 +331,7 @@ if not azure_only:
             subprocess.run(["azd", "env", "set", "FABRIC_WORKSPACE_ID", fabric_workspace_id], check=True, capture_output=True)
         except Exception:
             pass
-    # else: no workspace ID but capacity is set — step 02 will auto-create
+    # else: no workspace ID but CREATE_FABRIC_WORKSPACE is true — step 02 will auto-create
 
 # ============================================================================
 # Interactive Prompts for Data Generation
@@ -404,10 +405,8 @@ def run_step(step_id):
     # Dynamic label for step 02 based on workspace mode
     step_name = info['name']
     if step_id == "02":
-        fabric_ws = os.getenv("FABRIC_WORKSPACE_ID", "").strip()
-        if fabric_ws:
-            step_name = "Reuse Existing Workspace, Lakehouse & Load Data"
-        else:
+        create_ws = os.getenv("CREATE_FABRIC_WORKSPACE", "false").strip().lower() == "true"
+        if create_ws:
             step_name = "Create Workspace, Lakehouse & Load Data"
     
     if args.quiet:

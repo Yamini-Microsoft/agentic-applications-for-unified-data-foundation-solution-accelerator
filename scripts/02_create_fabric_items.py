@@ -59,6 +59,8 @@ p.add_argument("--datasource-type", choices=["ontology", "lakehouse"], default="
                help="Data source type for Data Agent: 'ontology' (default) or 'lakehouse'")
 p.add_argument("--cleanup", action="store_true",
                help="Delete Fabric workspace (used by azd down predown hook)")
+p.add_argument("--yes", "-y", action="store_true",
+               help="Skip confirmation prompts (for non-interactive/CI environments)")
 args = p.parse_args()
 
 # ============================================================================
@@ -92,6 +94,7 @@ FABRIC_API_BASE = "https://api.fabric.microsoft.com/v1"
 
 def make_request(method, url, **kwargs):
     """Make request with retry logic for 429 rate limiting"""
+    kwargs.setdefault("timeout", 60)
     max_retries = 5
     for attempt in range(max_retries):
         response = requests.request(method, url, headers=get_headers(), **kwargs)
@@ -229,7 +232,7 @@ def run_cleanup():
             ws_name = resp.json().get("displayName", "Unknown")
             print(f"  Workspace:    {ws_name}")
 
-            confirm = input(f"\n  Delete workspace '{ws_name}' ({workspace_id})? [y/N]: ").strip().lower()
+            confirm = "y" if args.yes else input(f"\n  Delete workspace '{ws_name}' ({workspace_id})? [y/N]: ").strip().lower()
             if confirm != "y":
                 print("  Skipped workspace deletion.")
                 return
@@ -266,17 +269,16 @@ if args.cleanup:
     sys.exit(0)
 
 # ============================================================================
-# Workspace Setup (auto-create if FABRIC_WORKSPACE_ID not set)
+# Workspace Setup
 # ============================================================================
 
-WORKSPACE_ID = os.getenv("FABRIC_WORKSPACE_ID", "").strip()
+create_workspace_flag = os.getenv("CREATE_FABRIC_WORKSPACE", "false").strip().lower() == "true"
 
-if not WORKSPACE_ID:
+if create_workspace_flag:
     capacity_name = os.getenv("AZURE_FABRIC_CAPACITY_NAME", "").strip()
     if not capacity_name:
-        print("ERROR: FABRIC_WORKSPACE_ID not set and AZURE_FABRIC_CAPACITY_NAME not available.")
-        print("       Either set FABRIC_WORKSPACE_ID in scripts/.env")
-        print("       Or set AZURE_FABRIC_CAPACITY_NAME to auto-create a workspace.")
+        print("ERROR: CREATE_FABRIC_WORKSPACE is true but AZURE_FABRIC_CAPACITY_NAME is not set.")
+        print("       Run: azd env set AZURE_FABRIC_CAPACITY_NAME <your-capacity-name>")
         sys.exit(1)
 
     solution_suffix = os.getenv("SOLUTION_SUFFIX", "").strip()
@@ -309,8 +311,15 @@ if not WORKSPACE_ID:
     except Exception:
         pass
     print(f"  URL: https://app.fabric.microsoft.com/groups/{WORKSPACE_ID}")
+else:
+    WORKSPACE_ID = os.getenv("FABRIC_WORKSPACE_ID", "").strip()
+    if not WORKSPACE_ID:
+        print("ERROR: FABRIC_WORKSPACE_ID is not set.")
+        print("       Set it via: azd env set FABRIC_WORKSPACE_ID <id>")
+        print("       Or enable auto-creation: azd env set CREATE_FABRIC_WORKSPACE true")
+        sys.exit(1)
 
-# Get data folder - use arg if provided, else from .env with proper path resolution
+# Get data folder- use arg if provided, else from .env with proper path resolution
 if args.data_folder:
     data_dir = os.path.abspath(args.data_folder)
 else:

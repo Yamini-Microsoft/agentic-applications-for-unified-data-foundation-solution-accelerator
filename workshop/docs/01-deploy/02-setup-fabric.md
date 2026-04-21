@@ -6,8 +6,12 @@ Create and configure your Microsoft Fabric workspace for Fabric IQ.
     If you set `AZURE_ENV_ONLY=true` before running `azd up`, you can **skip this page** and proceed directly to [Configure dev environment](03-configure.md).
 
 !!! tip "Automated Fabric Setup (Recommended)"
-    When running in **workshop mode** (default), Fabric Capacity and Workspace are **automatically created** during `azd up`. No manual steps are needed unless you want to use existing resources.
+    When running in **workshop mode** (default), Fabric Capacity is **automatically created** during `azd up`. The Fabric Workspace is created later by the build script (step 02) when `CREATE_FABRIC_WORKSPACE` is enabled.
 
+    - To **auto-create a workspace**, set the flag before running the build script:
+      ```bash
+      azd env set CREATE_FABRIC_WORKSPACE true
+      ```
     - To use an **existing Fabric capacity**, set the env var before running `azd up`:
       ```bash
       azd env set EXISTING_FABRIC_CAPACITY_NAME "your-capacity-name"
