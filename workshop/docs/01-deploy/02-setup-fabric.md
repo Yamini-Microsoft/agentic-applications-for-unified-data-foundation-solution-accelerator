@@ -14,7 +14,7 @@ Create and configure your Microsoft Fabric workspace for Fabric IQ.
       ```
     - To use an **existing Fabric workspace**, set:
       ```bash
-      azd env set EXISTING_FABRIC_WORKSPACE_ID "your-workspace-id"
+      azd env set FABRIC_WORKSPACE_ID "your-workspace-id"
       ```
     - To change the **capacity SKU** (default: F2):
       ```bash
