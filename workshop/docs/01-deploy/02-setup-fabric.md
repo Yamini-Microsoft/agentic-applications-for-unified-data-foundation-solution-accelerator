@@ -16,16 +16,16 @@ You need two Fabric resources: a **Fabric capacity** (F8 or higher) and a **work
 
 | Resource | When it is created | How to control it |
 |---|---|---|
-| **Fabric capacity** | During `azd up` | Auto-created by default. Use `EXISTING_FABRIC_CAPACITY_NAME` or `FABRIC_CAPACITY_SKU` to customize. |
-| **Fabric workspace** | During the build script (step 02) | **Opt-in** ΓÇö set `CREATE_FABRIC_WORKSPACE=true`, or pass an existing workspace ID via `FABRIC_WORKSPACE_ID` / `--fabric-workspace-id`. |
+| **Fabric capacity** | During `azd up` | Auto-created by default. Set `AZURE_FABRIC_CAPACITY_NAME` to reuse an existing capacity; use `FABRIC_CAPACITY_SKU` to customize the SKU. |
+| **Fabric workspace** | During the build script (step 02) | **Opt-in** — set `CREATE_FABRIC_WORKSPACE=true`, or pass an existing workspace ID via `FABRIC_WORKSPACE_ID` / `--fabric-workspace-id`. |
 
 ---
 
-## Step 1 ΓÇö Choose your setup path
+## Step 1  Choose your setup path
 
 Pick the path that matches what you already have.
 
-### Path A ΓÇö Auto-provision everything (recommended)
+### Path A — Auto-provision everything (recommended)
 
 Best for fresh environments. `azd up` creates the capacity; the build script creates the workspace.
 
@@ -42,18 +42,18 @@ Optional tuning:
 azd env set FABRIC_CAPACITY_SKU "F8"
 ```
 
-Skip to [Step 2 ΓÇö Verify tenant and workspace settings](#step-2-verify-tenant-and-workspace-settings) after the build runs.
+Skip to [Step 2 — Verify tenant and workspace settings](#step-2-verify-tenant-and-workspace-settings) after the build runs.
 
-### Path B ΓÇö Reuse an existing Fabric capacity
+### Path B — Reuse an existing Fabric capacity
 
 You already have an F8+ capacity but need a new workspace. Set these **before** `azd up`:
 
 ```bash
-azd env set EXISTING_FABRIC_CAPACITY_NAME "your-capacity-name"
+azd env set AZURE_FABRIC_CAPACITY_NAME "your-capacity-name"
 azd env set CREATE_FABRIC_WORKSPACE true
 ```
 
-### Path C ΓÇö Reuse an existing Fabric workspace
+### Path C — Reuse an existing Fabric workspace
 
 You already have a workspace linked to an F8+ capacity. Pass its ID:
 
@@ -63,23 +63,23 @@ azd env set FABRIC_WORKSPACE_ID "your-workspace-id"
 
 Or pass it to the build script directly with `--fabric-workspace-id <id>`.
 
-### Path D ΓÇö Create capacity or workspace manually
+### Path D — Create capacity or workspace manually
 
 Use this only if the auto-create paths don't fit (for example, your account lacks Azure permissions to create a capacity, or you need a specific region/config not exposed by the flags).
 
-- Create a Fabric capacity: **[Create a Fabric capacity in Azure ΓåÆ](02a-create-fabric-capacity.md)**
-- Create a Fabric workspace: **[Create a Fabric workspace ΓåÆ](02b-create-fabric-workspace.md)**
+- Create a Fabric capacity: **[Create a Fabric capacity in Azure →](02a-create-fabric-capacity.md)**
+- Create a Fabric workspace: **[Create a Fabric workspace →](02b-create-fabric-workspace.md)**
 
 Then use Path C above to plug the workspace into the build.
 
 ---
 
-## Step 2 ΓÇö Verify tenant and workspace settings
+## Step 2 — Verify tenant and workspace settings
 
 Once the workspace exists (auto-created or manual), confirm it's configured correctly.
 
 1. Open the workspace in [Microsoft Fabric](https://app.fabric.microsoft.com/).
-2. Click the **Workspace settings** gear icon (ΓÜÖ∩╕Å) in the top-right.
+2. Click the **Workspace settings** gear icon (⚙️) in the top-right.
 
     ![Open workspace settings](../assets/fabric/13-workspace-settings.png)
 
@@ -92,7 +92,7 @@ Once the workspace exists (auto-created or manual), confirm it's configured corr
 
 ---
 
-## Step 3 ΓÇö Retrieve the workspace ID
+## Step 3 — Retrieve the workspace ID
 
 Only required for **Path C** or **Path D** (auto-created workspaces are picked up by the build script automatically).
 
@@ -105,7 +105,7 @@ Only required for **Path C** or **Path D** (auto-created workspaces are picked u
 
     ![Copy workspace ID from URL](../assets/fabric/15-workspace-id.png)
 
-3. Copy it ΓÇö you'll pass it to the build script in [Run the scenario](04-run-scenario.md).
+3. Copy it — you'll pass it to the build script in [Run the scenario](04-run-scenario.md).
 
 !!! tip
     More detail: [Identify your workspace ID](https://learn.microsoft.com/en-us/fabric/admin/portal-workspace#identify-your-workspace-id).
@@ -122,8 +122,8 @@ Only required for **Path C** or **Path D** (auto-created workspaces are picked u
 | Workspace ID copied (Path C / Path D only) |
 
 !!! success "Ready to continue"
-    Proceed to [Configure dev environment ΓåÆ](03-configure.md).
+    Proceed to [Configure dev environment →](03-configure.md).
 
 ---
 
-[ΓåÉ Deploy Azure resources](01-deploy-azure.md) | [Configure dev environment ΓåÆ](03-configure.md)
+[← Deploy Azure resources](01-deploy-azure.md) | [Configure dev environment →](03-configure.md)

@@ -46,7 +46,7 @@ If a step fails, suggest solutions based on the error message.
     azd env set CREATE_FABRIC_WORKSPACE true
     ```
 
-    With that flag on, `azd up` provisions the Fabric capacity and the build script in Section 5 creates the workspace and links it automatically ΓÇö no portal clicks or workspace ID needed. Step **1a** (tenant settings) and **1d** (verify) still need to be done manually, since they require tenant-admin permissions and a quick portal check.
+    With that flag on, `azd up` provisions the Fabric capacity and the build script in Section 5 creates the workspace and links it automatically — no portal clicks or workspace ID needed. Step **1a** (tenant settings) and **1d** (verify) still need to be done manually, since they require tenant-admin permissions and a quick portal check.
 
 #### 1a. Enable Ontology and required features in Fabric Admin Portal
 
@@ -92,13 +92,13 @@ For detailed instructions, refer to the official documentation: [Fabric IQ Tenan
     If you already have a Fabric capacity (F8+), you can **skip this step** and use your existing capacity.
 
 Follow the instructions here:
-**[Create a Fabric capacity in Azure ΓåÆ](../01-deploy/02a-create-fabric-capacity.md)**
+**[Create a Fabric capacity in Azure →](../01-deploy/02a-create-fabric-capacity.md)**
 
 #### 1c. Create a Fabric workspace
 
-You have three options ΓÇö pick one:
+You have three options — pick one:
 
-**Option 1 ΓÇö Auto-create (recommended)**
+**Option 1 — Auto-create (recommended)**
 
 Let the build script create the workspace for you. Set this flag before running Section 5:
 
@@ -108,24 +108,24 @@ azd env set CREATE_FABRIC_WORKSPACE true
 
 When enabled, step 02 of `00_build_solution.py` automatically creates a workspace, links it to the Fabric capacity provisioned by `azd up`, and uses it for the rest of the deployment. You can **skip the manual steps** below and omit `--fabric-workspace-id` in Section 5.
 
-To point auto-create at a specific capacity (otherwise the one created by `azd up` is used):
+To reuse an existing Fabric capacity instead of creating a new one, set this **before** `azd up`:
 
 ```bash
-azd env set EXISTING_FABRIC_CAPACITY_NAME "your-capacity-name"
+azd env set AZURE_FABRIC_CAPACITY_NAME "your-capacity-name"
 ```
 
-**Option 2 ΓÇö Use an existing workspace**
+**Option 2 — Use an existing workspace**
 
 If you already have a Fabric workspace linked to a Fabric capacity, skip this step and use it. You'll pass its ID in Section 5 via `--fabric-workspace-id`.
 
-**Option 3 ΓÇö Create it manually in the Fabric portal**
+**Option 3 — Create it manually in the Fabric portal**
 
-Follow the instructions here: **[Create a Fabric workspace ΓåÆ](../01-deploy/02b-create-fabric-workspace.md)**
+Follow the instructions here: **[Create a Fabric workspace →](../01-deploy/02b-create-fabric-workspace.md)**
 
 #### 1d. Verify workspace settings
 
 1. Open your newly created workspace or an existing workspace.
-2. Click the **Workspace settings** gear icon (ΓÜÖ∩╕Å) in the top-right area.
+2. Click the **Workspace settings** gear icon (⚙️) in the top-right area.
 3. Go to **License info** and verify:
     - [x] The workspace is assigned to a **Fabric capacity**
     - [x] The capacity SKU is **F8** or higher
@@ -187,7 +187,7 @@ When you start the deployment, you will need to set the following parameters:
 
 | **Setting**                                 | **Description**                                                                                           | **Default value**      |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------- |
-| **Environment Name**                        | A unique **3ΓÇô20 character alphanumeric value** used to prefix resources, preventing conflicts with others.            | env\_name              |
+| **Environment Name**                        | A unique **3–20 character alphanumeric value** used to prefix resources, preventing conflicts with others.            | env\_name              |
 | **Azure Subscription**                      | The Azure subscription to deploy resources into. Only prompted if you have multiple subscriptions.        | *(auto-selected if only one)* |
 | **Azure Region**                            | The region where resources will be created.                                                               | *(empty)*              |
 | **AI Model Location**                        | The region where AI model will be created            | *(empty)*              |
@@ -226,9 +226,9 @@ Now pick **one** of the paths below based on how you created the workspace in Se
 
 ---
 
-#### Path A ΓÇö Auto-created workspace (recommended)
+#### Path A — Auto-created workspace (recommended)
 
-Use this path if you set `CREATE_FABRIC_WORKSPACE=true` in Section 1c. You do **not** need a workspace ID ΓÇö the script creates the workspace and discovers its ID automatically.
+Use this path if you set `CREATE_FABRIC_WORKSPACE=true` in Section 1c. You do **not** need a workspace ID — the script creates the workspace and discovers its ID automatically.
 
 ```bash
 python scripts/00_build_solution.py --from 02
@@ -236,14 +236,14 @@ python scripts/00_build_solution.py --from 02
 
 ---
 
-#### Path B ΓÇö Existing or manually created workspace
+#### Path B — Existing or manually created workspace
 
 Use this path if you have a workspace already (Section 1c Option 2 or Option 3). You need to pass the workspace ID.
 
 **Retrieve your Fabric workspace ID**
 
 1. Open your workspace in [Microsoft Fabric](https://app.fabric.microsoft.com/).
-2. Look at the URL ΓÇö the workspace ID is the GUID that appears after `/groups/`:
+2. Look at the URL — the workspace ID is the GUID that appears after `/groups/`:
 
     ```
     https://app.fabric.microsoft.com/groups/{workspace-id}/...
@@ -266,7 +266,7 @@ python scripts/00_build_solution.py --from 02 --fabric-workspace-id <your-worksp
 
 ---
 
-The build runs steps 02 ΓåÆ 08 (Fabric items, agent prompt, AI Search, Foundry agent, app deployment config). It typically takes **10ΓÇô15 minutes**.
+The build runs steps 02 → 08 (Fabric items, agent prompt, AI Search, Foundry agent, app deployment config). It typically takes **10–15 minutes**.
 
 ### 6. Test the agent
 
