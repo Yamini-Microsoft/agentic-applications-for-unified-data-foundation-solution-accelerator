@@ -39,6 +39,15 @@ If a step fails, suggest solutions based on the error message.
 
 ### 1. Configure Fabric workspace
 
+!!! tip "You can automate most of this section"
+    Steps **1b** (create capacity) and **1c** (create workspace) can be fully automated by the deployment. Before running `azd up` (Section 3), set:
+
+    ```bash
+    azd env set CREATE_FABRIC_WORKSPACE true
+    ```
+
+    With that flag on, `azd up` provisions the Fabric capacity and the build script in Section 5 creates the workspace and links it automatically ΓÇö no portal clicks or workspace ID needed. Step **1a** (tenant settings) and **1d** (verify) still need to be done manually, since they require tenant-admin permissions and a quick portal check.
+
 #### 1a. Enable Ontology and required features in Fabric Admin Portal
 
 !!! warning "Fabric IQ must be enabled"
@@ -83,20 +92,40 @@ For detailed instructions, refer to the official documentation: [Fabric IQ Tenan
     If you already have a Fabric capacity (F8+), you can **skip this step** and use your existing capacity.
 
 Follow the instructions here:
-**[Create a Fabric capacity in Azure →](../01-deploy/02a-create-fabric-capacity.md)**
+**[Create a Fabric capacity in Azure ΓåÆ](../01-deploy/02a-create-fabric-capacity.md)**
 
 #### 1c. Create a Fabric workspace
 
-!!! tip "Already have a Fabric workspace?"
-    If you already have a Fabric workspace linked to a Fabric capacity, you can **skip this step** and use your existing workspace.
+You have three options ΓÇö pick one:
 
-Follow the instructions here:
-**[Create a Fabric workspace →](../01-deploy/02b-create-fabric-workspace.md)**
+**Option 1 ΓÇö Auto-create (recommended)**
+
+Let the build script create the workspace for you. Set this flag before running Section 5:
+
+```bash
+azd env set CREATE_FABRIC_WORKSPACE true
+```
+
+When enabled, step 02 of `00_build_solution.py` automatically creates a workspace, links it to the Fabric capacity provisioned by `azd up`, and uses it for the rest of the deployment. You can **skip the manual steps** below and omit `--fabric-workspace-id` in Section 5.
+
+To point auto-create at a specific capacity (otherwise the one created by `azd up` is used):
+
+```bash
+azd env set EXISTING_FABRIC_CAPACITY_NAME "your-capacity-name"
+```
+
+**Option 2 ΓÇö Use an existing workspace**
+
+If you already have a Fabric workspace linked to a Fabric capacity, skip this step and use it. You'll pass its ID in Section 5 via `--fabric-workspace-id`.
+
+**Option 3 ΓÇö Create it manually in the Fabric portal**
+
+Follow the instructions here: **[Create a Fabric workspace ΓåÆ](../01-deploy/02b-create-fabric-workspace.md)**
 
 #### 1d. Verify workspace settings
 
 1. Open your newly created workspace or an existing workspace.
-2. Click the **Workspace settings** gear icon (⚙️) in the top-right area.
+2. Click the **Workspace settings** gear icon (ΓÜÖ∩╕Å) in the top-right area.
 3. Go to **License info** and verify:
     - [x] The workspace is assigned to a **Fabric capacity**
     - [x] The capacity SKU is **F8** or higher
@@ -158,7 +187,7 @@ When you start the deployment, you will need to set the following parameters:
 
 | **Setting**                                 | **Description**                                                                                           | **Default value**      |
 | ------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------- |
-| **Environment Name**                        | A unique **3–20 character alphanumeric value** used to prefix resources, preventing conflicts with others.            | env\_name              |
+| **Environment Name**                        | A unique **3ΓÇô20 character alphanumeric value** used to prefix resources, preventing conflicts with others.            | env\_name              |
 | **Azure Subscription**                      | The Azure subscription to deploy resources into. Only prompted if you have multiple subscriptions.        | *(auto-selected if only one)* |
 | **Azure Region**                            | The region where resources will be created.                                                               | *(empty)*              |
 | **AI Model Location**                        | The region where AI model will be created            | *(empty)*              |
@@ -183,12 +212,38 @@ pip install uv && uv pip install -r scripts/requirements.txt
 
 ### 5. Build the solution
 
-#### Retrieve your Fabric workspace ID
+This step runs `scripts/00_build_solution.py`, which creates (or uses) the Fabric workspace, loads the sample data, creates the Ontology and Data Agent, and publishes the MCP endpoint.
 
-You will need your workspace ID to pass as a parameter when building the solution.
+First, log in so the script can call Azure and Fabric APIs:
+
+```bash
+az login
+```
+
+> **VS Code Web users:** Use `az login --use-device-code` since browser-based login is not supported in VS Code Web.
+
+Now pick **one** of the paths below based on how you created the workspace in Section 1c.
+
+---
+
+#### Path A ΓÇö Auto-created workspace (recommended)
+
+Use this path if you set `CREATE_FABRIC_WORKSPACE=true` in Section 1c. You do **not** need a workspace ID ΓÇö the script creates the workspace and discovers its ID automatically.
+
+```bash
+python scripts/00_build_solution.py --from 02
+```
+
+---
+
+#### Path B ΓÇö Existing or manually created workspace
+
+Use this path if you have a workspace already (Section 1c Option 2 or Option 3). You need to pass the workspace ID.
+
+**Retrieve your Fabric workspace ID**
 
 1. Open your workspace in [Microsoft Fabric](https://app.fabric.microsoft.com/).
-2. Look at the URL — the workspace ID is the GUID that appears after `/groups/`:
+2. Look at the URL ΓÇö the workspace ID is the GUID that appears after `/groups/`:
 
     ```
     https://app.fabric.microsoft.com/groups/{workspace-id}/...
@@ -198,23 +253,20 @@ You will need your workspace ID to pass as a parameter when building the solutio
 
 3. Copy the workspace ID.
 
-!!! tip "Finding the workspace ID"
-    For more details, refer to the Microsoft documentation: [Identify your workspace ID](https://learn.microsoft.com/en-us/fabric/admin/portal-workspace#identify-your-workspace-id).
+    !!! tip "Finding the workspace ID"
+        For more details, see [Identify your workspace ID](https://learn.microsoft.com/en-us/fabric/admin/portal-workspace#identify-your-workspace-id).
 
-#### Run the build
-
-```bash
-az login
-```
-
-> **VS Code Web users:** Use `az login --use-device-code` since browser-based login is not supported in VS Code Web.
+**Run the build**
 
 ```bash
 python scripts/00_build_solution.py --from 02 --fabric-workspace-id <your-workspace-id>
 ```
 
-> **Note:** If you omit `--fabric-workspace-id`, the script will prompt you for it interactively. 
-> Press **Enter** key to start or **Ctrl+C** to cancel the process.
+> **Note:** If you omit `--fabric-workspace-id`, the script prompts for it interactively. Press **Enter** to accept or **Ctrl+C** to cancel.
+
+---
+
+The build runs steps 02 ΓåÆ 08 (Fabric items, agent prompt, AI Search, Foundry agent, app deployment config). It typically takes **10ΓÇô15 minutes**.
 
 ### 6. Test the agent
 
@@ -233,7 +285,7 @@ python scripts/07_test_agent.py
 
 Follow the step-by-step guide to create an Ontology in Microsoft Fabric for your scenario:
 
-👉 [Create Ontology Guide](./01-deploy/05-ontology-creation.md)
+≡ƒæë [Create Ontology Guide](./01-deploy/05-ontology-creation.md)
 
 This sets up entity types (Tickets, Inspections), data bindings from your Lakehouse tables, and relationships between them. -->
 
@@ -268,10 +320,10 @@ Instead of using AI-generated sample data, you can run the entire lab with **you
 
     ```
     data/customdata/
-    ├── tables/
-    │   └── *.csv                   # One CSV per table
-    └── documents/
-        └── *.pdf                   # PDF documents for AI Search
+    Γö£ΓöÇΓöÇ tables/
+    Γöé   ΓööΓöÇΓöÇ *.csv                   # One CSV per table
+    ΓööΓöÇΓöÇ documents/
+        ΓööΓöÇΓöÇ *.pdf                   # PDF documents for AI Search
     ```
 
     > The `config/` folder (with `ontology_config.json`) is **auto-generated** from your CSV files. See [data/customdata/README.md](https://github.com/microsoft/agentic-applications-for-unified-data-foundation-solution-accelerator/blob/main/data/customdata/README.md) for details.

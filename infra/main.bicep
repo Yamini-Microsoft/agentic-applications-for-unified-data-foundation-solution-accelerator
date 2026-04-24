@@ -189,7 +189,10 @@ resource resourceGroupTags 'Microsoft.Resources/tags@2021-04-01' = if (!isWorksh
 
 // ========== Fabric Capacity (Workshop mode) ========== //
 var fabricCapacityResourceName = useExistingFabricCapacity ? existingFabricCapacityName : 'fc${solutionSuffix}'
-var fabricCapacityDefaultAdmins = [deployer().objectId]
+// Fabric Capacity requires a UPN for user admins; service principals (CI/CD) use objectId.
+var fabricCapacityDefaultAdmins = deployer().?userPrincipalName == null
+  ? [deployer().objectId]
+  : [deployer().userPrincipalName]
 var fabricTotalAdminMembers = union(fabricCapacityDefaultAdmins, fabricAdminMembers)
 
 module fabricCapacityModule 'br/public:avm/res/fabric/capacity:0.1.1' = if (shouldCreateFabricCapacity) {
