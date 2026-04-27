@@ -40,14 +40,14 @@ hooks:
       run: |
         $isWorkshop = $env:IS_WORKSHOP
         $deployApp = $env:AZURE_ENV_DEPLOY_APP
-        $azureEnvOnly = $env:AZURE_ENV_ONLY
 
         if (-not ($isWorkshop -eq "true" -and $deployApp -ne "true")) {
             Write-Host "Web app URL: "
             Write-Host "$env:WEB_APP_URL" -ForegroundColor Cyan
         }
-
-        if ($isWorkshop -ne "true") {
+        if ($isWorkshop -eq "true") {
+            Write-Host ""
+        } else {
             Write-Host "`nRun the following commands in the bash terminal:"
             Write-Host "1. Create agents:"
             Write-Host "bash ./infra/scripts/agent_scripts/run_create_agents_scripts.sh" -ForegroundColor Cyan
@@ -61,16 +61,15 @@ hooks:
       interactive: true
     posix:
       run: |
-        IS_WORKSHOP_VAL="${IS_WORKSHOP:-}"
-        AZURE_ENV_ONLY_VAL="${AZURE_ENV_ONLY:-}"
-
-        if [ "$IS_WORKSHOP_VAL" != "true" ] || [ "$AZURE_ENV_DEPLOY_APP" = "true" ]; then
+        if [ "$IS_WORKSHOP" != "true" ] || [ "$AZURE_ENV_DEPLOY_APP" = "true" ]; then
             echo "Web app URL: "
             echo $WEB_APP_URL
             echo ""
         fi
 
-        if [ "$IS_WORKSHOP_VAL" != "true" ]; then
+        if [ "$IS_WORKSHOP" = "true" ]; then
+            echo ""
+        else
             echo "Run the following commands in the bash terminal:"
             echo "1. Create agents:"
             echo "bash ./infra/scripts/agent_scripts/run_create_agents_scripts.sh"
