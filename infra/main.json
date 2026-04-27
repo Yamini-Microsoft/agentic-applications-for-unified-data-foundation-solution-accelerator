@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.42.1.51946",
-      "templateHash": "2129642045338742014"
+      "templateHash": "12941406397909960554"
     }
   },
   "parameters": {
@@ -176,6 +176,47 @@
       "defaultValue": true,
       "metadata": {
         "description": "Enable chat history."
+      }
+    },
+    "azureFabricCapacityName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Optional. Name of the Fabric capacity to use. If empty, a new capacity named `fc<solutionSuffix>` is auto-created when isWorkshop is true and azureEnvOnly is false. If set, that capacity is reused and no new capacity is created."
+      }
+    },
+    "fabricCapacitySku": {
+      "type": "string",
+      "defaultValue": "F2",
+      "allowedValues": [
+        "F2",
+        "F4",
+        "F8",
+        "F16",
+        "F32",
+        "F64",
+        "F128",
+        "F256",
+        "F512",
+        "F1024",
+        "F2048"
+      ],
+      "metadata": {
+        "description": "Optional. SKU tier of the Fabric capacity resource. Defaults to F2."
+      }
+    },
+    "fabricAdminMembers": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Optional. An array of user object IDs or service principal object IDs that will be assigned the Fabric Capacity Admin role."
+      }
+    },
+    "createFabricWorkspace": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Set to true to auto-create a Fabric workspace during the build step. When false, capacity creation is also skipped (an existing workspace implies an existing capacity)."
       }
     },
     "AZURE_LOCATION": {
@@ -457,12 +498,17 @@
     },
     "abbrs": "[variables('$fxv#0')]",
     "useChatHistoryEnabledSetting": "[if(parameters('useChatHistoryEnabled'), 'True', 'False')]",
+    "useExistingFabricCapacity": "[not(empty(parameters('azureFabricCapacityName')))]",
+    "shouldCreateFabricCapacity": "[and(and(and(parameters('isWorkshop'), not(parameters('azureEnvOnly'))), parameters('createFabricWorkspace')), not(variables('useExistingFabricCapacity')))]",
     "shouldDeployApp": "[or(not(parameters('isWorkshop')), parameters('deployApp'))]",
     "solutionLocation": "[if(empty(parameters('AZURE_LOCATION')), resourceGroup().location, parameters('AZURE_LOCATION'))]",
     "solutionSuffix": "[toLower(trim(replace(replace(replace(replace(replace(replace(format('{0}{1}', parameters('environmentName'), parameters('solutionUniqueText')), '-', ''), '_', ''), '.', ''), '/', ''), ' ', ''), '*', '')))]",
     "deployerInfo": "[deployer()]",
     "deployingUserPrincipalId": "[variables('deployerInfo').objectId]",
     "existingTags": "[coalesce(resourceGroup().tags, createObject())]",
+    "fabricCapacityResourceName": "[if(variables('useExistingFabricCapacity'), parameters('azureFabricCapacityName'), format('fc{0}', variables('solutionSuffix')))]",
+    "fabricCapacityDefaultAdmins": "[if(equals(tryGet(deployer(), 'userPrincipalName'), null()), createArray(deployer().objectId), createArray(deployer().userPrincipalName))]",
+    "fabricTotalAdminMembers": "[union(variables('fabricCapacityDefaultAdmins'), parameters('fabricAdminMembers'))]",
     "landingText": "[if(equals(parameters('usecase'), 'Retail-sales-analysis'), 'You can ask questions around sales, products and orders.', 'You can ask questions around customer policies, claims and communications.')]"
   },
   "resources": [
@@ -473,6 +519,233 @@
       "name": "default",
       "properties": {
         "tags": "[union(variables('existingTags'), createObject('TemplateName', 'Unified Data Analysis Agents', 'CreatedBy', parameters('createdBy'), 'DeploymentName', deployment().name, 'Type', 'Non-WAF'))]"
+      }
+    },
+    {
+      "condition": "[variables('shouldCreateFabricCapacity')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "[take(format('avm.res.fabric.capacity.{0}', variables('fabricCapacityResourceName')), 64)]",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "name": {
+            "value": "[variables('fabricCapacityResourceName')]"
+          },
+          "location": {
+            "value": "[variables('solutionLocation')]"
+          },
+          "skuName": {
+            "value": "[parameters('fabricCapacitySku')]"
+          },
+          "adminMembers": {
+            "value": "[variables('fabricTotalAdminMembers')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.30.23.60470",
+              "templateHash": "10641105328531461860"
+            },
+            "name": "Fabric Capacities",
+            "description": "This module deploys Fabric capacities, which provide the compute resources for all the experiences in Fabric.",
+            "owner": "Azure/module-maintainers"
+          },
+          "definitions": {
+            "lockType": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. Specify the name of lock."
+                  }
+                },
+                "kind": {
+                  "type": "string",
+                  "allowedValues": [
+                    "CanNotDelete",
+                    "None",
+                    "ReadOnly"
+                  ],
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Optional. Specify the type of lock."
+                  }
+                }
+              },
+              "metadata": {
+                "description": "An AVM-aligned type for a lock.",
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "br:mcr.microsoft.com/bicep/avm/utl/types/avm-common-types:0.2.1"
+                }
+              }
+            }
+          },
+          "parameters": {
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "Required. Name of the resource to create."
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Optional. Location for all resources."
+              }
+            },
+            "tags": {
+              "type": "object",
+              "nullable": true,
+              "metadata": {
+                "description": "Optional. Tags of the resource."
+              }
+            },
+            "skuName": {
+              "type": "string",
+              "defaultValue": "F2",
+              "allowedValues": [
+                "F2",
+                "F4",
+                "F8",
+                "F16",
+                "F32",
+                "F64",
+                "F128",
+                "F256",
+                "F512",
+                "F1024",
+                "F2048"
+              ],
+              "metadata": {
+                "description": "Optional. SKU tier of the Fabric resource."
+              }
+            },
+            "skuTier": {
+              "type": "string",
+              "defaultValue": "Fabric",
+              "allowedValues": [
+                "Fabric"
+              ],
+              "metadata": {
+                "description": "Optional. SKU name of the Fabric resource."
+              }
+            },
+            "adminMembers": {
+              "type": "array",
+              "metadata": {
+                "description": "Required. List of admin members. Format: [\"something@domain.com\"]."
+              }
+            },
+            "lock": {
+              "$ref": "#/definitions/lockType",
+              "nullable": true,
+              "metadata": {
+                "description": "Optional. The lock settings of the service."
+              }
+            },
+            "enableTelemetry": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Optional. Enable/Disable usage telemetry for module."
+              }
+            }
+          },
+          "resources": {
+            "avmTelemetry": {
+              "condition": "[parameters('enableTelemetry')]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2024-03-01",
+              "name": "[format('46d3xbcp.res.fabric-capacity.{0}.{1}', replace('0.1.1', '.', '-'), substring(uniqueString(deployment().name, parameters('location')), 0, 4))]",
+              "properties": {
+                "mode": "Incremental",
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "resources": [],
+                  "outputs": {
+                    "telemetry": {
+                      "type": "String",
+                      "value": "For more information, see https://aka.ms/avm/TelemetryInfo"
+                    }
+                  }
+                }
+              }
+            },
+            "fabricCapacity": {
+              "type": "Microsoft.Fabric/capacities",
+              "apiVersion": "2023-11-01",
+              "name": "[parameters('name')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('skuName')]",
+                "tier": "[parameters('skuTier')]"
+              },
+              "properties": {
+                "administration": {
+                  "members": "[parameters('adminMembers')]"
+                }
+              }
+            },
+            "fabricCapacity_lock": {
+              "condition": "[and(not(empty(coalesce(parameters('lock'), createObject()))), not(equals(tryGet(parameters('lock'), 'kind'), 'None')))]",
+              "type": "Microsoft.Authorization/locks",
+              "apiVersion": "2016-09-01",
+              "scope": "[format('Microsoft.Fabric/capacities/{0}', parameters('name'))]",
+              "name": "[coalesce(tryGet(parameters('lock'), 'name'), format('lock-{0}', parameters('name')))]",
+              "properties": {
+                "level": "[coalesce(tryGet(parameters('lock'), 'kind'), '')]",
+                "notes": "[if(equals(tryGet(parameters('lock'), 'kind'), 'CanNotDelete'), 'Cannot delete resource or child resources.', 'Cannot delete or modify the resource or child resources.')]"
+              },
+              "dependsOn": [
+                "fabricCapacity"
+              ]
+            }
+          },
+          "outputs": {
+            "resourceGroupName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the resource group the module was deployed to."
+              },
+              "value": "[resourceGroup().name]"
+            },
+            "resourceId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the deployed Fabric resource."
+              },
+              "value": "[resourceId('Microsoft.Fabric/capacities', parameters('name'))]"
+            },
+            "name": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the deployed Fabric resource."
+              },
+              "value": "[parameters('name')]"
+            },
+            "location": {
+              "type": "string",
+              "metadata": {
+                "description": "The location the resource was deployed into."
+              },
+              "value": "[reference('fabricCapacity', '2023-11-01', 'full').location]"
+            }
+          }
+        }
       }
     },
     {
@@ -5085,6 +5358,27 @@
         "description": "Flag indicating Azure-only mode (no Fabric)"
       },
       "value": "[parameters('azureEnvOnly')]"
+    },
+    "AZURE_FABRIC_CAPACITY_NAME": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the Fabric capacity resource"
+      },
+      "value": "[if(and(and(parameters('isWorkshop'), not(parameters('azureEnvOnly'))), parameters('createFabricWorkspace')), variables('fabricCapacityResourceName'), '')]"
+    },
+    "AZURE_FABRIC_CAPACITY_ADMINISTRATORS": {
+      "type": "array",
+      "metadata": {
+        "description": "The identities assigned as Fabric Capacity Admin members"
+      },
+      "value": "[if(and(and(parameters('isWorkshop'), not(parameters('azureEnvOnly'))), parameters('createFabricWorkspace')), variables('fabricTotalAdminMembers'), createArray())]"
+    },
+    "SOLUTION_SUFFIX": {
+      "type": "string",
+      "metadata": {
+        "description": "The unique solution suffix of the deployed resources"
+      },
+      "value": "[variables('solutionSuffix')]"
     }
   }
 }

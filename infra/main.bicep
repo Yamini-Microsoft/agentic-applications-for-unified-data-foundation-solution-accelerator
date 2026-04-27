@@ -117,12 +117,11 @@ param fabricCapacitySku string = 'F2'
 @description('Optional. An array of user object IDs or service principal object IDs that will be assigned the Fabric Capacity Admin role.')
 param fabricAdminMembers array = []
 
-@description('Optional. ID of an existing Fabric workspace to use. If set, no new capacity is created (the existing workspace is already linked to one).')
-param fabricWorkspaceId string = ''
+@description('Set to true to auto-create a Fabric workspace during the build step. When false, capacity creation is also skipped (an existing workspace implies an existing capacity).')
+param createFabricWorkspace bool = false
 
 var useExistingFabricCapacity = !empty(azureFabricCapacityName)
-var useExistingFabricWorkspace = !empty(fabricWorkspaceId)
-var shouldCreateFabricCapacity = isWorkshop && !azureEnvOnly && !useExistingFabricCapacity && !useExistingFabricWorkspace
+var shouldCreateFabricCapacity = isWorkshop && !azureEnvOnly && createFabricWorkspace && !useExistingFabricCapacity
 
 // If isWorkshop is false, always deploy; if isWorkshop is true, respect deployApp
 var shouldDeployApp = !isWorkshop || deployApp
@@ -513,11 +512,11 @@ output AZURE_ENV_DEPLOY_APP bool = deployApp
 @description('Flag indicating Azure-only mode (no Fabric)')
 output AZURE_ENV_ONLY bool = azureEnvOnly
 
-@description('The name of the Fabric capacity resource (empty when reusing an existing workspace, since its capacity is managed externally)')
-output AZURE_FABRIC_CAPACITY_NAME string = (isWorkshop && !azureEnvOnly && !useExistingFabricWorkspace) ? fabricCapacityResourceName : ''
+@description('The name of the Fabric capacity resource')
+output AZURE_FABRIC_CAPACITY_NAME string = (isWorkshop && !azureEnvOnly && createFabricWorkspace) ? fabricCapacityResourceName : ''
 
 @description('The identities assigned as Fabric Capacity Admin members')
-output AZURE_FABRIC_CAPACITY_ADMINISTRATORS array = (isWorkshop && !azureEnvOnly && !useExistingFabricWorkspace) ? fabricTotalAdminMembers : []
+output AZURE_FABRIC_CAPACITY_ADMINISTRATORS array = (isWorkshop && !azureEnvOnly && createFabricWorkspace) ? fabricTotalAdminMembers : []
 
 @description('The unique solution suffix of the deployed resources')
 output SOLUTION_SUFFIX string = solutionSuffix

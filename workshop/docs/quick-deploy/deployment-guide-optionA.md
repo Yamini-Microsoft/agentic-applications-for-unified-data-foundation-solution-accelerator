@@ -46,7 +46,8 @@ If a step fails, suggest solutions based on the error message.
     azd env set CREATE_FABRIC_WORKSPACE true
     ```
 
-    With that flag on, `azd up` provisions the Fabric capacity and the build script in Section 5 creates the workspace and links it automatically — no portal clicks or workspace ID needed. Step **1a** (tenant settings) and **1d** (verify) still need to be done manually, since they require tenant-admin permissions and a quick portal check.
+!!! note
+    Steps **1a** (tenant settings) and **1d** (verify) still need to be done manually.
 
 #### 1a. Enable Ontology and required features in Fabric Admin Portal
 
@@ -88,39 +89,35 @@ For detailed instructions, refer to the official documentation: [Fabric IQ Tenan
 
 #### 1b. Create a Fabric capacity in Azure
 
-!!! tip "Already have a Fabric capacity?"
-    If you already have a Fabric capacity (F8+), you can **skip this step** and use your existing capacity.
-
-Follow the instructions here:
-**[Create a Fabric capacity in Azure →](../01-deploy/02a-create-fabric-capacity.md)**
-
-#### 1c. Create a Fabric workspace
-
-You have three options — pick one:
-
-**Option 1 — Auto-create (recommended)**
-
-Let the build script create the workspace for you. Set this flag before running Section 5:
-
-```bash
-azd env set CREATE_FABRIC_WORKSPACE true
-```
-
-When enabled, step 02 of `00_build_solution.py` automatically creates a workspace, links it to the Fabric capacity provisioned by `azd up`, and uses it for the rest of the deployment. You can **skip the manual steps** below and omit `--fabric-workspace-id` in Section 5.
-
-To reuse an existing Fabric capacity instead of creating a new one, set this **before** `azd up`:
+If you already have a Fabric capacity (F8+), you can **skip this step** and reuse it by setting:
 
 ```bash
 azd env set AZURE_FABRIC_CAPACITY_NAME "your-capacity-name"
 ```
 
-**Option 2 — Use an existing workspace**
+Otherwise, follow the instructions here to create one:
+**[Create a Fabric capacity in Azure →](../01-deploy/02a-create-fabric-capacity.md)**
 
-If you already have a Fabric workspace linked to a Fabric capacity, skip this step and use it. You'll pass its ID in Section 5 via `--fabric-workspace-id`.
+#### 1c. Create a Fabric workspace
 
-**Option 3 — Create it manually in the Fabric portal**
+You have two options — pick one:
+
+**Option 1 — Auto-create (recommended)**
+
+Auto-create the workspace for you. Set this flag **before `azd up`** (Section 2):
+
+```bash
+azd env set CREATE_FABRIC_WORKSPACE true
+```
+
+When enabled, the build step automatically creates a workspace, links it to the Fabric capacity provisioned by `azd up`, and uses it for the rest of the deployment. You can **skip the manual steps** below and omit `--fabric-workspace-id` in Section 5.
+
+**Option 2 — Create it manually in the Fabric portal**
 
 Follow the instructions here: **[Create a Fabric workspace →](../01-deploy/02b-create-fabric-workspace.md)**
+
+!!! note "Already have a Fabric workspace?"
+    If you already have a Fabric workspace linked to a Fabric capacity, skip this step and use it. You'll pass its ID in Section 5 via `--fabric-workspace-id`.
 
 #### 1d. Verify workspace settings
 
@@ -176,6 +173,13 @@ azd config set provision.preflight off
 
 **Run the deployment:**
 
+**(Optional)** Set these flags before running `azd up` if you want the deployment to auto-create Fabric resources:
+
+```bash
+azd env set CREATE_FABRIC_WORKSPACE true
+azd env set AZURE_FABRIC_CAPACITY_NAME <your-capacity-name>  # only if reusing an existing capacity
+```
+
 Run the following command to provision all required Azure resources:
 
 ```bash
@@ -212,7 +216,7 @@ pip install uv && uv pip install -r scripts/requirements.txt
 
 ### 5. Build the solution
 
-This step runs `scripts/00_build_solution.py`, which creates (or uses) the Fabric workspace, loads the sample data, creates the Ontology and Data Agent, and publishes the MCP endpoint.
+This step creates (or uses) the Fabric workspace, loads the sample data, creates the Ontology and Data Agent, and publishes the MCP endpoint.
 
 First, log in so the script can call Azure and Fabric APIs:
 
@@ -238,7 +242,7 @@ python scripts/00_build_solution.py --from 02
 
 #### Path B — Existing or manually created workspace
 
-Use this path if you have a workspace already (Section 1c Option 2 or Option 3). You need to pass the workspace ID.
+Use this path if you have a workspace already (Section 1c Option 2). You need to pass the workspace ID.
 
 **Retrieve your Fabric workspace ID**
 
@@ -320,10 +324,10 @@ Instead of using AI-generated sample data, you can run the entire lab with **you
 
     ```
     data/customdata/
-    Γö£ΓöÇΓöÇ tables/
-    Γöé   ΓööΓöÇΓöÇ *.csv                   # One CSV per table
-    ΓööΓöÇΓöÇ documents/
-        ΓööΓöÇΓöÇ *.pdf                   # PDF documents for AI Search
+    ├── tables/
+    │   └── *.csv                   # One CSV per table
+    └── documents/
+        └── *.pdf                   # PDF documents for AI Search
     ```
 
     > The `config/` folder (with `ontology_config.json`) is **auto-generated** from your CSV files. See [data/customdata/README.md](https://github.com/microsoft/agentic-applications-for-unified-data-foundation-solution-accelerator/blob/main/data/customdata/README.md) for details.

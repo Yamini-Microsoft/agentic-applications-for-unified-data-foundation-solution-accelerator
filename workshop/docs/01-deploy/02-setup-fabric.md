@@ -17,7 +17,7 @@ You need two Fabric resources: a **Fabric capacity** (F8 or higher) and a **work
 | Resource | When it is created | How to control it |
 |---|---|---|
 | **Fabric capacity** | During `azd up` | Auto-created by default. Set `AZURE_FABRIC_CAPACITY_NAME` to reuse an existing capacity; use `FABRIC_CAPACITY_SKU` to customize the SKU. |
-| **Fabric workspace** | During the build script (step 02) | **Opt-in** — set `CREATE_FABRIC_WORKSPACE=true`, or pass an existing workspace ID via `FABRIC_WORKSPACE_ID` / `--fabric-workspace-id`. |
+| **Fabric workspace** | During the build step | **Opt-in** — set `CREATE_FABRIC_WORKSPACE=true`, or pass an existing workspace ID via `FABRIC_WORKSPACE_ID` / `--fabric-workspace-id`. |
 
 ---
 
@@ -29,7 +29,7 @@ Pick the path that matches what you already have.
 
 Best for fresh environments. `azd up` creates the capacity; the build script creates the workspace.
 
-Run **before** the build step:
+Run **before** `azd up`:
 
 ```bash
 azd env set CREATE_FABRIC_WORKSPACE true

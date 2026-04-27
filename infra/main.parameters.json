@@ -71,8 +71,8 @@
     "fabricAdminMembers": {
       "value": "${FABRIC_ADMIN_MEMBERS=[]}"
     },
-    "fabricWorkspaceId": {
-      "value": "${FABRIC_WORKSPACE_ID=}"
+    "createFabricWorkspace": {
+      "value": "${CREATE_FABRIC_WORKSPACE=false}"
     }
   }
 }
