@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.42.1.51946",
-      "templateHash": "12941406397909960554"
+      "templateHash": "7665190881007898015"
     }
   },
   "parameters": {
@@ -187,7 +187,7 @@
     },
     "fabricCapacitySku": {
       "type": "string",
-      "defaultValue": "F2",
+      "defaultValue": "F8",
       "allowedValues": [
         "F2",
         "F4",
@@ -202,7 +202,7 @@
         "F2048"
       ],
       "metadata": {
-        "description": "Optional. SKU tier of the Fabric capacity resource. Defaults to F2."
+        "description": "Optional. SKU tier of the Fabric capacity resource. Defaults to F8."
       }
     },
     "fabricAdminMembers": {

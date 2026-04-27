@@ -111,8 +111,8 @@ param azureFabricCapacityName string = ''
   'F1024'
   'F2048'
 ])
-@description('Optional. SKU tier of the Fabric capacity resource. Defaults to F2.')
-param fabricCapacitySku string = 'F2'
+@description('Optional. SKU tier of the Fabric capacity resource. Defaults to F8.')
+param fabricCapacitySku string = 'F8'
 
 @description('Optional. An array of user object IDs or service principal object IDs that will be assigned the Fabric Capacity Admin role.')
 param fabricAdminMembers array = []
