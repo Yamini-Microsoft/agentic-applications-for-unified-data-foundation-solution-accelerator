@@ -289,7 +289,7 @@ python scripts/07_test_agent.py
 
 Follow the step-by-step guide to create an Ontology in Microsoft Fabric for your scenario:
 
-≡ƒæë [Create Ontology Guide](./01-deploy/05-ontology-creation.md)
+👉 [Create Ontology Guide](./01-deploy/05-ontology-creation.md)
 
 This sets up entity types (Tickets, Inspections), data bindings from your Lakehouse tables, and relationships between them. -->
 
